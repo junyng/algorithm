@@ -1,55 +1,62 @@
+import copy
+
+dx = [-1, -1, 0, 1, 1, 1, 0, -1]
+dy = [0, -1, -1, -1, 0, 1, 1, 1]
+
+def leftover(board, x, y):
+    positions = []
+    direction = board[x][y][1]
+    for i in range(1, 4):
+        nx, ny = x + dx[direction], y + dy[direction]
+        if 0 <= nx < 4 and 0 <= ny < 4 and 1 <= board[nx][ny][0] <= 16:
+            positions.append([nx, ny])
+        x, y = nx, ny
+    return positions
+    
+def find_fish(board, index):
+    for x in range(4):
+        for y in range(4):
+            if board[x][y][0] == index:
+                return (x, y)
+    return None
+    
+def move_fishes(board, shark_x, shark_y):
+    for i in range(1, 17):
+        pos = find_fish(board, i)
+        if pos == None: continue
+        x, y = pos
+        dir = board[x][y][1]
+    
+        for i in range(8):
+            nx, ny = x + dx[dir], y + dy[dir]
+            if 0 <= nx < 4 and 0 <= ny < 4 and not (nx == shark_x and ny == shark_y):
+                board[x][y][0], board[nx][ny][0] = board[nx][ny][0], board[x][y][0]
+                board[x][y][1], board[nx][ny][1] = board[nx][ny][1], dir
+                break
+            dir = (dir + 1) % 8
+
+def dfs(board, x, y, total):
+    global answer
+    board = copy.deepcopy(board)
+    
+    number = board[x][y][0]
+    board[x][y][0] = -1
+    
+    move_fishes(board, x, y)
+    
+    positions = leftover(board, x, y)
+    
+    answer = max(answer, total + number)
+    
+    for x, y in positions:
+        dfs(board, x, y, total + number)
+    
+
+arr = [list(map(int, input().split())) for _ in range(4)]
+board = [[None] * 4 for _ in range(4)]
+for i in range(4):
+    for j in range(4):
+        board[i][j] = [arr[i][j * 2], arr[i][j * 2 + 1] - 1]
 answer = 0
-
-result = []
-fishes = {}
-board = {}
-moves = {1:-4, 2: -3, 3:1, 4:5, 5:4, 6:3, 7:-1, 8:-5}
-
-
-for j in range(4):
-    row = list(map(int, input().split()))
-    for i in range(1, len(row)+1, 2):
-        number = row[i-1]
-        direction = row[i]
-        pos = (i // 2 + 1) + j * 4
-        fishes[number] = (pos, direction) 
-        board[pos] = number
-
-
-def dfs(i, r, eat, board, fishes):
-    if r == 17:
-        result.append(eat)
-        return
-    
-    if board[i] != -1:
-        eat += board[i]
-        
-    board[i] = -1
-    direction = fishes[i][1]
-        
-    move = moves[direction]
-    next_i = i + move
-    
-    while (1 <= next_i <= 16):
-        board[i] = 0
-        move_fishes(board, fishes)
-        dfs(next_i, r+1, eat, board, fishes)
-        next_i += move
-    else:
-        move_fishes(board, fishes)
-        dfs(i, r+1, eat, board, fishes)
-
-
-def move_fishes(board, fishes):
-    for j in range(1, 16):
-        if j in fishes:
-            fish = fishes[j]
-            source = fish[0]
-            direction = fish[1]
-            move = moves[direction]
-            target = source + move
-            if 1 <= target <= 16 and board[target] != -1:
-                board[source], board[target] = board[target], board[source]
-
-dfs(1, 1, 0, board, fishes)
-print(result)
+dfs(board, 0, 0, 0)
+print(answer)
